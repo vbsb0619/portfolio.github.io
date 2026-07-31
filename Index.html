@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Senior Data Engineer — Pipeline Architecture Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0F16;
+    --bg-panel:#0F161F;
+    --bg-panel-alt:#141D28;
+    --line:#223140;
+    --line-soft:#1A2530;
+    --text:#E8EDF3;
+    --text-muted:#8A98A8;
+    --text-dim:#5E6B7A;
+    --gold:#D9A75B;
+    --gold-dim:#8A6B3C;
+    --teal:#4FB8AC;
+    --teal-dim:#2E6E66;
+    --red:#E2694B;
+    --radius:3px;
+    --maxw:1120px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} *{animation:none !important;transition:none !important;} }
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--gold-dim);color:#fff;}
+
+  a{color:inherit;text-decoration:none;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;}
+  @media(max-width:640px){.wrap{padding:0 20px;}}
+
+  h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-0.01em;}
+
+  /* ---------- background grid texture ---------- */
+  .bg-grid{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:64px 64px;
+    opacity:0.35;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 70%);
+  }
+
+  /* ---------- nav ---------- */
+  header.nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(10,15,22,0.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .nav-brand{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.02em;}
+  .nav-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .nav-links{display:flex;gap:28px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+  .nav-links a{transition:color .15s;padding:4px 0;border-bottom:1px solid transparent;}
+  .nav-links a:hover{color:var(--gold);border-color:var(--gold-dim);}
+  .nav-cta{
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    border:1px solid var(--gold-dim);color:var(--gold);
+    padding:8px 14px;border-radius:var(--radius);
+    transition:all .15s;
+  }
+  .nav-cta:hover{background:var(--gold);color:#0A0F16;border-color:var(--gold);}
+  @media(max-width:760px){.nav-links{display:none;}}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;z-index:1;padding:88px 0 64px;}
+  .status-bar{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--teal);
+    border:1px solid var(--teal-dim);background:rgba(79,184,172,0.06);
+    padding:7px 14px;border-radius:20px;margin-bottom:28px;
+  }
+  .status-bar .dot{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:pulse 2s ease-in-out infinite;}
+  .hero h1{
+    font-size:clamp(34px,5.4vw,58px);
+    line-height:1.08;
+    max-width:820px;
+    margin-bottom:22px;
+  }
+  .hero h1 .accent{color:var(--gold);}
+  .hero p.lede{
+    font-size:18px;color:var(--text-muted);max-width:620px;margin-bottom:36px;
+  }
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:56px;}
+  .btn{
+    font-family:'JetBrains Mono',monospace;font-size:13px;
+    padding:12px 20px;border-radius:var(--radius);
+    display:inline-flex;align-items:center;gap:8px;
+    transition:all .15s;
+  }
+  .btn-primary{background:var(--gold);color:#0A0F16;font-weight:700;}
+  .btn-primary:hover{background:#e8b876;}
+  .btn-ghost{border:1px solid var(--line);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+  /* readout panel */
+  .readout{
+    border:1px solid var(--line);background:var(--bg-panel);
+    border-radius:var(--radius);overflow:hidden;
+  }
+  .readout-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 16px;border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+  }
+  .readout-head .dots{display:flex;gap:6px;}
+  .readout-head .dots span{width:8px;height:8px;border-radius:50%;background:var(--line);}
+  .readout-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);
+  }
+  @media(max-width:760px){.readout-grid{grid-template-columns:repeat(2,1fr);}}
+  .readout-cell{
+    padding:20px 18px;border-right:1px solid var(--line);border-top:1px solid var(--line);
+  }
+  .readout-cell:nth-child(4n){border-right:none;}
+  .readout-cell .label{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+  .readout-cell .value{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:600;color:var(--text);}
+  .readout-cell .value.gold{color:var(--gold);}
+  .readout-cell .value.teal{color:var(--teal);}
+
+  /* ---------- section shell ---------- */
+  section{position:relative;z-index:1;padding:96px 0;border-top:1px solid var(--line);}
+  .section-head{margin-bottom:48px;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);
+    text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:'';width:20px;height:1px;background:var(--gold-dim);}
+  .section-head h2{font-size:clamp(26px,3.4vw,36px);margin-bottom:14px;}
+  .section-head p{color:var(--text-muted);max-width:640px;font-size:16px;}
+
+  /* ---------- about / schema block ---------- */
+  .schema{
+    border:1px solid var(--line);background:var(--bg-panel);border-radius:var(--radius);
+    display:grid;grid-template-columns:1.1fr 1fr;
+  }
+  @media(max-width:820px){.schema{grid-template-columns:1fr;}}
+  .schema-copy{padding:36px;border-right:1px solid var(--line);}
+  @media(max-width:820px){.schema-copy{border-right:none;border-bottom:1px solid var(--line);}}
+  .schema-copy p{color:var(--text-muted);margin-bottom:16px;font-size:15.5px;}
+  .schema-copy p:last-child{margin-bottom:0;}
+  .schema-fields{padding:36px;font-family:'JetBrains Mono',monospace;font-size:13px;}
+  .schema-fields .row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line-soft);gap:16px;}
+  .schema-fields .row:last-child{border-bottom:none;}
+  .schema-fields .k{color:var(--text-dim);}
+  .schema-fields .v{color:var(--text);text-align:right;}
+  .schema-fields .v.gold{color:var(--gold);}
+
+  /* ---------- pipeline / timeline ---------- */
+  .pipeline{position:relative;padding-left:36px;}
+  .pipeline::before{
+    content:'';position:absolute;left:9px;top:6px;bottom:6px;width:2px;
+    background:linear-gradient(var(--teal-dim),var(--line),var(--line));
+  }
+  .stage{position:relative;padding-bottom:44px;}
+  .stage:last-child{padding-bottom:0;}
+  .stage-node{
+    position:absolute;left:-36px;top:2px;width:20px;height:20px;border-radius:50%;
+    background:var(--bg);border:2px solid var(--teal);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stage-node::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--teal);}
+  .stage.current .stage-node{border-color:var(--gold);box-shadow:0 0 0 4px rgba(217,167,91,0.12);}
+  .stage.current .stage-node::after{background:var(--gold);}
+  .stage-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:6px;}
+  .stage-role{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:600;}
+  .stage-tag{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:3px 8px;border-radius:20px;
+    border:1px solid var(--teal-dim);color:var(--teal);text-transform:uppercase;letter-spacing:0.05em;
+  }
+  .stage.current .stage-tag{border-color:var(--gold-dim);color:var(--gold);}
+  .stage-org{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);margin-bottom:10px;}
+  .stage-org .date{color:var(--text-dim);}
+  .stage p.desc{color:var(--text-muted);font-size:15px;max-width:640px;}
+
+  /* ---------- stack layers ---------- */
+  .layers{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .layer{background:var(--bg-panel);padding:22px 26px;display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start;}
+  @media(max-width:700px){.layer{grid-template-columns:1fr;gap:10px;}}
+  .layer-name{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--gold);text-transform:uppercase;letter-spacing:0.05em;padding-top:3px;}
+  .layer-items{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text-muted);
+    border:1px solid var(--line-soft);padding:5px 10px;border-radius:var(--radius);
+    background:var(--bg-panel-alt);
+  }
+
+  /* ---------- case studies ---------- */
+  .cases{display:flex;flex-direction:column;gap:14px;}
+  .case{
+    border:1px solid var(--line);background:var(--bg-panel);border-radius:var(--radius);overflow:hidden;
+  }
+  .case-head{
+    width:100%;text-align:left;background:none;border:none;color:inherit;cursor:pointer;
+    padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+    font-family:inherit;
+  }
+  .case-head:hover{background:var(--bg-panel-alt);}
+  .case-title-wrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .case-num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);}
+  .case-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;}
+  .case-sub{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);margin-top:4px;}
+  .case-toggle{
+    width:26px;height:26px;border-radius:50%;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-family:'JetBrains Mono',monospace;color:var(--text-muted);transition:transform .2s;
+  }
+  .case.open .case-toggle{transform:rotate(45deg);border-color:var(--gold-dim);color:var(--gold);}
+  .case-body{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+  .case.open .case-body{max-height:900px;}
+  .case-body-inner{padding:0 26px 26px;border-top:1px solid var(--line-soft);}
+  .case-body-inner .block{margin-top:18px;}
+  .case-body-inner .block-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+  .case-body-inner p{color:var(--text-muted);font-size:14.5px;}
+  .case-body-inner ul{color:var(--text-muted);font-size:14.5px;padding-left:18px;margin-top:6px;}
+  .case-body-inner li{margin-bottom:6px;}
+  .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+
+  /* ---------- impact grid ---------- */
+  .impact-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  @media(max-width:820px){.impact-grid{grid-template-columns:repeat(2,1fr);}}
+  .impact-cell{background:var(--bg-panel);padding:26px 22px;}
+  .impact-cell .num{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;color:var(--gold);margin-bottom:6px;}
+  .impact-cell .lbl{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.4;}
+
+  /* ---------- talks ---------- */
+  .talks{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media(max-width:760px){.talks{grid-template-columns:1fr;}}
+  .talk{border:1px solid var(--line);background:var(--bg-panel);border-radius:var(--radius);padding:20px 22px;}
+  .talk-title{font-family:'Space Grotesk',sans-serif;font-size:15.5px;font-weight:600;margin-bottom:8px;}
+  .talk p{color:var(--text-muted);font-size:13.5px;}
+
+  /* ---------- publications ---------- */
+  .pub-card{border:1px solid var(--line);background:var(--bg-panel);border-radius:var(--radius);padding:28px 30px;}
+  .pub-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  .pub-title{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:600;max-width:640px;}
+  .placeholder-badge{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--red);
+    border:1px solid var(--red);padding:4px 10px;border-radius:20px;
+    text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;
+  }
+  .pub-meta{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text-dim);margin-bottom:16px;}
+  .pub-card p.abstract{color:var(--text-muted);font-size:14.5px;margin-bottom:18px;}
+  .pub-links{display:flex;gap:12px;flex-wrap:wrap;}
+
+  /* ---------- contact / footer ---------- */
+  .contact{text-align:center;}
+  .contact h2{font-size:clamp(28px,4vw,42px);margin-bottom:18px;}
+  .contact p{color:var(--text-muted);font-size:16px;max-width:520px;margin:0 auto 36px;}
+  .contact-links{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;}
+  footer{border-top:1px solid var(--line);padding:32px 0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);position:relative;z-index:1;}
+
+  /* fade-in on scroll */
+  .fade-in{opacity:0;transform:translateY(14px);transition:opacity .5s ease, transform .5s ease;}
+  .fade-in.visible{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <div class="nav-brand"><span class="dot"></span> Vamsee&nbsp;Bandi </div>
+    <nav class="nav-links">
+      <a href="#pipeline">Career</a>
+      <a href="#leadership">Leadership</a>
+      <a href="#stack">Stack</a>
+      <a href="#cases">Case Studies</a>
+      <a href="#publications">Publications</a>
+      <a href="#impact">Impact</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a href="#contact" class="nav-cta">Get in touch →</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="status-bar"><span class="dot"></span> STATUS: OPEN TO STAFF / LEAD DATA ENGINEERING ROLES</div>
+    <h1>I build the data pipelines that <span class="accent">financial systems quietly depend on</span> — and I don't let them fail at 2am.</h1>
+    <p class="lede">Senior Data Engineer with 16+ years in technology — 10+ years specialized in database &amp; data engineering, including 5+ years architecting production ETL systems for mortgage &amp; financial services. I take technical ownership of complex, cross-team systems end to end: designing the framework, driving org-wide standards, and being the person other engineers come to when a pipeline breaks at 2am.</p>
+    <div class="hero-ctas">
+      <a href="#cases" class="btn btn-primary">View case studies →</a>
+      <a href="#pipeline" class="btn btn-ghost">See career pipeline</a>
+    </div>
+
+    <div class="readout fade-in">
+      <div class="readout-head">
+        <span>system_status.log</span>
+        <div class="dots"><span style="background:var(--teal)"></span><span></span><span></span></div>
+      </div>
+      <div class="readout-grid">
+        <div class="readout-cell"><div class="label">Years in Technology</div><div class="value gold">16+</div></div>
+        <div class="readout-cell"><div class="label">Production Pipelines Owned</div><div class="value">750+</div></div>
+        <div class="readout-cell"><div class="label">Jira Tickets Resolved</div><div class="value teal">97% completion</div></div>
+        <div class="readout-cell"><div class="label">Custom ETL Pipelines Built</div><div class="value">25+</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Source</div>
+      <h2>Where the pipeline starts</h2>
+    </div>
+    <div class="schema fade-in">
+      <div class="schema-copy">
+        <p>I started as a co-founder — setting up machines, writing the first lines of code, and hiring the first engineers for a real-estate operations startup before I'd even finished my undergrad degree. That instinct to build the whole thing, not just my corner of it, has stuck with me through 16 years spanning startup leadership, enterprise database administration, cloud migrations, and now large-scale ETL architecture — the last 10+ of them focused specifically on data and database engineering.</p>
+        <p>Today I design and operate the pipelines that keep loan, payment, and CRM data flowing accurately across origination, servicing, and finance systems for a national mortgage &amp; financial services platform — processing thousands of loans and 1,000+ dealer invoices every cycle, without anyone downstream noticing the machinery underneath.</p>
+        <p>What I care about isn't just moving data — it's making pipelines that fail safely, alert early, and recover on their own.</p>
+      </div>
+      <div class="schema-fields">
+        <div class="row"><span class="k">role</span><span class="v gold">Senior Data Engineer</span></div>
+        <div class="row"><span class="k">targeting</span><span class="v gold">Staff / Lead Data Engineer</span></div>
+        <div class="row"><span class="k">focus</span><span class="v">ETL / ELT · Financial Data Systems</span></div>
+        <div class="row"><span class="k">experience</span><span class="v">16+ yrs (10+ yrs data &amp; DB engineering)</span></div>
+        <div class="row"><span class="k">core_stack</span><span class="v">PostgreSQL · SSIS · Python · Jenkins</span></div>
+        <div class="row"><span class="k">domain</span><span class="v">Mortgage Origination &amp; Servicing</span></div>
+        <div class="row"><span class="k">location</span><span class="v">Remote (US)</span></div>
+        <div class="row"><span class="k">status</span><span class="v gold">Open to new roles</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAREER PIPELINE -->
+<section id="pipeline">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Pipeline</div>
+      <h2>Career, staged like a data pipeline</h2>
+      <p>Every stage feeds the next — from hand-installing servers in a startup office to architecting containerized ETL frameworks on AWS.</p>
+    </div>
+
+    <div class="pipeline fade-in">
+
+      <div class="stage">
+        <div class="stage-node"></div>
+        <div class="stage-top"><span class="stage-role">Co-Founder &amp; Technical Director</span><span class="stage-tag">extract</span></div>
+        <div class="stage-org">REwhiz Operations Startup · India <span class="date">· 2010 – 2014</span></div>
+        <p class="desc">Built the company from zero — sourced hardware, installed the dev environment (.NET/C#, SQL Server), hired and directed a 3-person engineering team, and ran day-to-day delivery on a client-funded real-estate operations tool while finishing a Bachelor's in Computer Science.</p>
+      </div>
+
+      <div class="stage">
+        <div class="stage-node"></div>
+        <div class="stage-top"><span class="stage-role">Master's, Computer Science</span><span class="stage-tag">upgrade</span></div>
+        <div class="stage-org">Graduate School · USA <span class="date">· Graduated Dec 2015</span></div>
+        <p class="desc">Specialized coursework in big data analytics and database management systems. Graduated with a 3.85/4.0 GPA and closed out the India startup to begin a full-time data career in the US.</p>
+      </div>
+
+      <div class="stage">
+        <div class="stage-node"></div>
+        <div class="stage-top"><span class="stage-role">Database Developer</span><span class="stage-tag">transform</span></div>
+        <div class="stage-org">Med-Metrix LLC -> McKesson Corp · New Jersey <span class="date">· Apr 2016 – Oct 2018</span></div>
+        <p class="desc">Owned SQL Server 2012 databases under HIPAA constraints — SSIS packages, ad-hoc client queries, SSRS reporting, and PowerShell automation for 835/837 claims files. Led the on-prem → Azure migration after the company's acquisition, scaling from a handful of databases to several hundred, while mentoring engineers and covering program-management duties ahead of formal hires.</p>
+      </div>
+
+      <div class="stage">
+        <div class="stage-node"></div>
+        <div class="stage-top"><span class="stage-role">Senior Database Administrator (Lead)</span><span class="stage-tag">migrate</span></div>
+        <div class="stage-org">Principal Financial Services · Iowa <span class="date">· Jan 2019 – Oct 2019</span></div>
+        <p class="desc">Reported directly to an Executive Director. Owned performance tuning, disaster recovery, and cloud-readiness across ~25TB databases. Designed and delivered a near-impossible cross-version migration — consolidating SQL Server 2008 through 2016 environments onto a single modern version with minimal downtime — earning recognition from multiple Executive Directors.</p>
+      </div>
+
+      <div class="stage">
+        <div class="stage-node"></div>
+        <div class="stage-top"><span class="stage-role">Database Administrator &amp; Data Architect</span><span class="stage-tag">architect</span></div>
+        <div class="stage-org">G-Commerce Inc · Iowa  <span class="date">· Oct 2019 – Jul 2021</span></div>
+        <p class="desc">Sole DBA reporting to the CTO. Worked across SQL Server, Azure Data Factory, Azure Site Recovery, Azure DevOps, and AWS RDS/PostgreSQL. Served as data architect on a company-wide Authentication &amp; Authorization system — wearing the architect, engineer, and administrator hats at once.</p>
+      </div>
+
+      <div class="stage current">
+        <div class="stage-node"></div>
+        <div class="stage-top"><span class="stage-role">Senior Data Engineer</span><span class="stage-tag">current · load &amp; monitor</span></div>
+        <div class="stage-org">Mortgage &amp; Financial Services Platform · Remote <span class="date">· Jul 2021 – Present</span></div>
+        <p class="desc">Design and operate production ETL architecture across loan origination, servicing, payments, and CRM systems — including a custom containerized Python ETL framework (25+ pipelines built), Stripe billing automation, and real-time wire funding infrastructure. Detailed below.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- LEADERSHIP -->
+<section id="leadership">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Orchestrate</div>
+      <h2>Technical leadership, without the manager title</h2>
+      <p>What "lead" has looked like in practice, across every role — driving standards and owning outcomes across teams, even without formal direct reports.</p>
+    </div>
+    <div class="talks fade-in">
+      <div class="talk"><div class="talk-title">Org-wide pipeline inventory &amp; upgrade planning</div><p>Led the discovery and cataloging of every active pipeline on the ETL framework to plan shared-library upgrades and assign owners across the team.</p></div>
+      <div class="talk"><div class="talk-title">Driving a cross-environment security fix</div><p>Identified that UAT and production were sharing the same secrets store, then drove the creation of separated non-prod service accounts before it became an incident.</p></div>
+      <div class="talk"><div class="talk-title">Informal engineering lead, three roles running</div><p>Repeatedly stepped into mentoring, interim program management, and people-management gaps ahead of formal hires — from a healthcare data team through to today.</p></div>
+      <div class="talk"><div class="talk-title">Coordinating a multi-team, zero-downtime migration</div><p>Designed and led execution of a ~25TB cross-version database migration, aligning DBAs, business analysts, and systems engineering with no prior playbook to follow.</p></div>
+      <div class="talk"><div class="talk-title">Primary technical owner, escalation point</div><p>The default owner for CRM, billing, and wire-funding systems — the person other engineers and business teams come to when something breaks in production.</p></div>
+      <div class="talk"><div class="talk-title">Setting the ETL standard, not just using it</div><p>Helped design the core class-library architecture of the team's ETL framework — the pattern every other engineer's pipeline is now built on.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- STACK -->
+<section id="stack">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Transform</div>
+      <h2>The stack, layered like an architecture diagram</h2>
+    </div>
+    <div class="layers fade-in">
+      <div class="layer">
+        <div class="layer-name">Languages &amp; DB</div>
+        <div class="layer-items">
+          <span class="chip">PostgreSQL</span><span class="chip">SQL Server</span><span class="chip">T-SQL</span>
+          <span class="chip">PL/pgSQL</span><span class="chip">Python</span><span class="chip">C# (SSIS)</span>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">ETL &amp; Integration</div>
+        <div class="layer-items">
+          <span class="chip">Custom Python ETL Framework</span><span class="chip">SSIS</span><span class="chip">Jenkins CI/CD</span>
+          <span class="chip">Power Automate</span><span class="chip">REST APIs</span><span class="chip">Foreign Data Wrappers</span>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Cloud &amp; Infra</div>
+        <div class="layer-items">
+          <span class="chip">AWS ECS / ECR</span><span class="chip">AWS Lambda</span><span class="chip">AWS Secrets Manager</span>
+          <span class="chip">AWS IAM</span><span class="chip">Docker</span><span class="chip">Azure Data Factory</span><span class="chip">New Relic</span>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Platforms</div>
+        <div class="layer-items">
+          <span class="chip">Stripe API</span><span class="chip">Salesforce</span><span class="chip">Zoho CRM</span>
+          <span class="chip">Contact Center Platforms</span><span class="chip">Loan Origination Systems</span><span class="chip">SSRS</span><span class="chip">Tableau / Power BI</span>
+        </div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Domain Knowledge</div>
+        <div class="layer-items">
+          <span class="chip">Mortgage Origination &amp; Servicing</span><span class="chip">MISMO XML</span><span class="chip">HMDA Reporting</span>
+          <span class="chip">Wire Funding Ops</span><span class="chip">HIPAA Data Handling</span><span class="chip">Master Data Management</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CASE STUDIES -->
+<section id="cases">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Load</div>
+      <h2>Case studies</h2>
+      <p>Selected production systems I designed, built, and kept running. Click to expand.</p>
+    </div>
+
+    <div class="cases fade-in">
+
+      <div class="case">
+        <button class="case-head" onclick="toggleCase(this)">
+          <div>
+            <div class="case-title-wrap"><span class="case-num">01</span><span class="case-title">Automated billing integration for a national dealer network</span></div>
+            <div class="case-sub">Payments &amp; invoicing · PostgreSQL, Stripe API</div>
+          </div>
+          <div class="case-toggle">+</div>
+        </button>
+        <div class="case-body"><div class="case-body-inner">
+          <div class="block"><div class="block-label">Problem</div><p>Dealer invoicing and payment reconciliation between the loan accounting system and Stripe was manual, error-prone, and couldn't scale with 1,000+ retail dealers billed every month.</p></div>
+          <div class="block"><div class="block-label">What I built</div><ul>
+            <li>Architected 20+ database objects — tables, stored procedures, and functions for invoice generation, payment sync, and reconciliation</li>
+            <li>Built a JSON payload engine using PostgreSQL's <code>jsonb_agg</code>/<code>json_build_object</code> to support dynamic, per-dealer line items</li>
+            <li>Designed fee-calculation business logic (capped ACH fees, tiered software fees) and a Finance-controlled override to pause specific invoices from syncing</li>
+            <li>Diagnosed and fixed a production bug where an <code>UPDATE</code> ordering issue was silently zeroing out processing fees during credit invoice generation</li>
+          </ul></div>
+          <div class="block"><div class="block-label">Impact</div><p>Runs monthly invoicing for 1,000+ dealers with automated reconciliation, including edge cases like partial payments, manual credit memos, and out-of-band Stripe adjustments.</p></div>
+          <div class="tag-row"><span class="chip">PostgreSQL</span><span class="chip">Stripe API</span><span class="chip">JSON payload design</span></div>
+        </div></div>
+      </div>
+
+      <div class="case">
+        <button class="case-head" onclick="toggleCase(this)">
+          <div>
+            <div class="case-title-wrap"><span class="case-num">02</span><span class="case-title">Stabilizing contact-center data pipelines</span></div>
+            <div class="case-sub">Reliability engineering · PostgreSQL, Jenkins</div>
+          </div>
+          <div class="case-toggle">+</div>
+        </button>
+        <div class="case-body"><div class="case-body-inner">
+          <div class="block"><div class="block-label">Problem</div><p>The pipelines feeding contact-center analytics for originations and servicing teams failed regularly due to integer overflow from legacy data references, taking down entire jobs over single bad records.</p></div>
+          <div class="block"><div class="block-label">What I built</div><ul>
+            <li>Diagnosed the overflow pattern and built a repeatable fix: null out invalid records in temp tables, then re-run merge procedures</li>
+            <li>Led removal of the legacy field references causing the recurring failures, eliminating the root cause</li>
+            <li>Designed error-catch logic so the pipeline processes all valid records even when individual rows fail — no more full-job failures from one bad record</li>
+            <li>Ran discovery to right-size the data lookback window, balancing completeness against performance</li>
+          </ul></div>
+          <div class="block"><div class="block-label">Impact</div><p>Converted a chronically unstable pipeline into a reliable daily feed for two business teams.</p></div>
+          <div class="tag-row"><span class="chip">Root cause analysis</span><span class="chip">Error handling</span><span class="chip">Jenkins</span></div>
+        </div></div>
+      </div>
+
+      <div class="case">
+        <button class="case-head" onclick="toggleCase(this)">
+          <div>
+            <div class="case-title-wrap"><span class="case-num">03</span><span class="case-title">CRM migration &amp; administration (Salesforce → Zoho)</span></div>
+            <div class="case-sub">CRM systems · PostgreSQL, Zoho CRM, Salesforce</div>
+          </div>
+          <div class="case-toggle">+</div>
+        </button>
+        <div class="case-body"><div class="case-body-inner">
+          <div class="block"><div class="block-label">Problem</div><p>Loan status data still depended on a legacy, largely-inactive Salesforce integration while the business had moved to Zoho CRM, creating stale data and unnecessary infrastructure risk.</p></div>
+          <div class="block"><div class="block-label">What I built</div><ul>
+            <li>Refactored the loan-status pipeline end-to-end to read from Zoho instead of Salesforce, moved the sync from once-daily to hourly for near real-time freshness</li>
+            <li>Decommissioned the unused Salesforce integration after confirming 1.5 years of inactivity, cleaning up production infrastructure</li>
+            <li>Built a full audit-history table and revised insert/update/delete logic to track every contact change synced from the CRM</li>
+            <li>Fixed a duplication bug where borrower name changes were creating duplicate CRM records, and an apostrophe-handling bug crashing syncs on special characters</li>
+          </ul></div>
+          <div class="block"><div class="block-label">Impact</div><p>Became the primary technical owner of CRM data integration, UI configuration, and permissions across the platform.</p></div>
+          <div class="tag-row"><span class="chip">CRM migration</span><span class="chip">Data quality</span><span class="chip">Audit logging</span></div>
+        </div></div>
+      </div>
+
+      <div class="case">
+        <button class="case-head" onclick="toggleCase(this)">
+          <div>
+            <div class="case-title-wrap"><span class="case-num">04</span><span class="case-title">Near real-time wire funding system for a banking partner</span></div>
+            <div class="case-sub">High-stakes financial ops · SSIS, PostgreSQL</div>
+          </div>
+          <div class="case-toggle">+</div>
+        </button>
+        <div class="case-body"><div class="case-body-inner">
+          <div class="block"><div class="block-label">Problem</div><p>Wire funding requests to a banking partner needed to move on a tight, reliable cadence with accurate reconciliation — a process where mistakes carry real financial and compliance weight.</p></div>
+          <div class="block"><div class="block-label">What I built</div><ul>
+            <li>Deployed 9 stored procedures, 5 tables, and 2 SSIS packages running every 15 minutes during business hours</li>
+            <li>Built header/detail/trailer outbound file generation and end-of-day reconciliation logic</li>
+            <li>Fixed a decimal-precision bug in amount handling and corrected the cancel-queue logic to use actual cancellation timestamps</li>
+          </ul></div>
+          <div class="block"><div class="block-label">Impact</div><p>Wire requests now process on a reliable 15-minute cycle with automated reconciliation and reporting for Finance/Treasury.</p></div>
+          <div class="tag-row"><span class="chip">SSIS</span><span class="chip">Financial reconciliation</span><span class="chip">High-availability jobs</span></div>
+        </div></div>
+      </div>
+
+      <div class="case">
+        <button class="case-head" onclick="toggleCase(this)">
+          <div>
+            <div class="case-title-wrap"><span class="case-num">05</span><span class="case-title">Rules-based data quality engine (MDM)</span></div>
+            <div class="case-sub">Data governance · PostgreSQL, SSRS, Tableau</div>
+          </div>
+          <div class="case-toggle">+</div>
+        </button>
+        <div class="case-body"><div class="case-body-inner">
+          <div class="block"><div class="block-label">Problem</div><p>The mortgage loan portfolio needed systematic validation — loan amounts, LTV ratios, interest rates, borrower identities, and addresses — with a way to track and remediate issues at scale.</p></div>
+          <div class="block"><div class="block-label">What I built</div><ul>
+            <li>Built 40+ validation rules across two rule sets, executed via PostgreSQL stored procedures orchestrated through SSIS and Jenkins</li>
+            <li>Built aggregate reporting views feeding Tableau and SSRS dashboards for ongoing monitoring</li>
+            <li>Performed large-scale remediation-table maintenance — archiving and rebuilding a 100M+ row table</li>
+          </ul></div>
+          <div class="block"><div class="block-label">Impact</div><p>Gave the business a repeatable, auditable data-quality process instead of ad-hoc spot checks.</p></div>
+          <div class="tag-row"><span class="chip">Data governance</span><span class="chip">Rules engine</span><span class="chip">Dashboarding</span></div>
+        </div></div>
+      </div>
+
+      <div class="case">
+        <button class="case-head" onclick="toggleCase(this)">
+          <div>
+            <div class="case-title-wrap"><span class="case-num">06</span><span class="case-title">OCR document capture &amp; classification pipeline</span></div>
+            <div class="case-sub">Automation · Power Automate, AWS Lambda, OCR</div>
+          </div>
+          <div class="case-toggle">+</div>
+        </button>
+        <div class="case-body"><div class="case-body-inner">
+          <div class="block"><div class="block-label">Problem</div><p>Incoming credit application documents needed automated capture, classification, and routing — with visibility into where and why documents failed classification.</p></div>
+          <div class="block"><div class="block-label">What I built</div><ul>
+            <li>Built Power Automate flows for email monitoring, PDF extraction, SharePoint storage, and calls into a Lambda-based OCR classification engine</li>
+            <li>Added timeout (5 min) and retry logic (3 attempts) on Lambda calls to prevent queue buildup, plus PDF-only filtering to block bad attachments</li>
+            <li>Added structured error logging for "unknown document type" and "missing PDF" cases, then modularized the flow into high- and low-fidelity paths</li>
+          </ul></div>
+          <div class="block"><div class="block-label">Impact</div><p>Turned an opaque failure mode into a measurable, reportable process — with dealer-level misclassification analysis feeding ongoing OCR accuracy improvements.</p></div>
+          <div class="tag-row"><span class="chip">Power Automate</span><span class="chip">AWS Lambda</span><span class="chip">OCR</span></div>
+        </div></div>
+      </div>
+
+      <div class="case">
+        <button class="case-head" onclick="toggleCase(this)">
+          <div>
+            <div class="case-title-wrap"><span class="case-num">07</span><span class="case-title">Custom containerized ETL framework — 25+ pipelines built</span></div>
+            <div class="case-sub">Platform engineering · Python, AWS ECS, Docker, Jenkins</div>
+          </div>
+          <div class="case-toggle">+</div>
+        </button>
+        <div class="case-body"><div class="case-body-inner">
+          <div class="block"><div class="block-label">Problem</div><p>Legacy SSIS + ad-hoc Python scripts didn't scale as an ETL standard — no shared framework, inconsistent deployment, and no unified monitoring across environments.</p></div>
+          <div class="block"><div class="block-label">What I built</div><ul>
+            <li>Helped build the core framework's class library architecture (Identity → Parameter → Task → Stage → Pipeline) that every job now standardizes on, running in Docker containers on AWS ECS with Jenkins CI/CD across DEV → UAT → QA → PROD</li>
+            <li>Built 25+ production pipelines on this framework, including a loan-monitoring system that reconciles the origination system against the data warehouse daily, government economic-data ingestion for a loss-severity model, a legacy mainframe file parser, and multiple vendor finance-report integrations built from scratch</li>
+            <li>Refactored a 7-job pipeline chain into a single parent-child orchestrated Jenkins pipeline with proper dependency management</li>
+            <li>Led an org-wide inventory of every active pipeline on the framework to plan and coordinate shared-library upgrades</li>
+          </ul></div>
+          <div class="block"><div class="block-label">Impact</div><p>Became the team's default ETL standard — 25+ full pipelines and 15+ lightweight jobs now run on it in production.</p></div>
+          <div class="tag-row"><span class="chip">Python</span><span class="chip">AWS ECS / ECR</span><span class="chip">Docker</span><span class="chip">Jenkins orchestration</span></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PUBLICATIONS -->
+<section id="publications">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Peer-Reviewed</div>
+      <h2>Research &amp; publications</h2>
+      <p>Published research alongside production engineering work.</p>
+    </div>
+
+    <div class="pub-card fade-in">
+      <div class="pub-top">
+        <div class="pub-title">[ PAPER TITLE — Vectorized Computation Primitives for High-Level Web Scraping via SIMD Instruction Set Abstraction ]</div>
+        <span class="placeholder-badge">More on the way</span>
+      </div>
+      <div class="pub-meta">[ IEEE International Conference on Communication Networks and Computing (CNC), 2025 ] · IEEE Xplore</div>
+      <div class="pub-links">
+        <a href="#" class="btn btn-ghost">View on IEEE Xplore →</a>
+        <a href="#" class="btn btn-ghost">DOI - 10.1109/CNC68716.2025.11484541 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- IMPACT -->
+<section id="impact">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Monitor</div>
+      <h2>Impact, by the numbers</h2>
+    </div>
+    <div class="impact-grid fade-in">
+      <div class="impact-cell"><div class="num">750+</div><div class="lbl">Jenkins-orchestrated production jobs maintained</div></div>
+      <div class="impact-cell"><div class="num">25+</div><div class="lbl">Custom ETL pipelines designed &amp; deployed</div></div>
+      <div class="impact-cell"><div class="num">1,000+</div><div class="lbl">Dealers invoiced automatically, every month</div></div>
+      <div class="impact-cell"><div class="num">40+</div><div class="lbl">Data-quality validation rules across 2 rule sets</div></div>
+      <div class="impact-cell"><div class="num">100M+</div><div class="lbl">Rows migrated in large-scale table remediation</div></div>
+      <div class="impact-cell"><div class="num">25TB+</div><div class="lbl">VLDBs migrated from On-Premise to Cloud - AWS &amp; Azure</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TALKS -->
+<section id="talks">
+  <div class="wrap">
+    <div class="section-head fade-in">
+      <div class="eyebrow">Docs</div>
+      <h2>Things I could walk a team through</h2>
+      <p>Topics I've got deep enough hands-on experience with to present, whiteboard, or pair on.</p>
+    </div>
+    <div class="talks fade-in">
+      <div class="talk"><div class="talk-title">Building a containerized ETL framework from scratch</div><p>From legacy scripts to a standardized, class-library-driven pipeline framework on AWS ECS.</p></div>
+      <div class="talk"><div class="talk-title">Real-time reconciliation between source systems and a data warehouse</div><p>Daily API-driven monitoring that catches sync delays before they become data incidents.</p></div>
+      <div class="talk"><div class="talk-title">End-to-end billing integration with Stripe</div><p>From business-logic data sourcing to JSON payload generation to payment reconciliation.</p></div>
+      <div class="talk"><div class="talk-title">Zero-downtime database platform migrations</div><p>Running two pipelines in parallel to two database targets through a cutover window.</p></div>
+      <div class="talk"><div class="talk-title">Parent-child Jenkins orchestration</div><p>Turning independent, brittle jobs into one dependency-aware pipeline.</p></div>
+      <div class="talk"><div class="talk-title">Designing a rules-based data-quality engine</div><p>From rule configuration through remediation tracking to executive dashboards.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="wrap contact fade-in">
+    <div class="eyebrow" style="justify-content:center;">Output</div>
+    <h2>Let's talk about your data pipeline.</h2>
+    <p>Open to Staff / Lead Data Engineering roles in financial services, fintech, or anywhere.</p>
+    <div class="contact-links">
+      <a href="mailto:vamsee.db@gmail.com" class="btn btn-primary">vamsee.db@gmail.com</a>
+      <a href="#" class="btn btn-ghost">LinkedIn →</a>
+      <a href="#" class="btn btn-ghost">Download résumé →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">© 2026</div>
+</footer>
+
+<script>
+  function toggleCase(btn){
+    const card = btn.closest('.case');
+    const wasOpen = card.classList.contains('open');
+    document.querySelectorAll('.case.open').forEach(c => { if(c!==card){ c.classList.remove('open'); c.querySelector('.case-toggle').textContent='+'; }});
+    card.classList.toggle('open', !wasOpen);
+    btn.querySelector('.case-toggle').textContent = !wasOpen ? '×' : '+';
+  }
+
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); } });
+  }, {threshold:0.1});
+  document.querySelectorAll('.fade-in').forEach(el=>observer.observe(el));
+</script>
+
+</body>
+</html>
